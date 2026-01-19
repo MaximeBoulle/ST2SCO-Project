@@ -14,15 +14,6 @@ jobs:
     name: OWASP ZAP Dynamic Scan
     runs-on: ubuntu-latest
 
-    services:
-      backend:
-        image: node:20
-        options: >-
-          --health-cmd "curl -f http://localhost:3000/health || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -33,11 +24,36 @@ jobs:
           echo "Waiting for services to be ready..."
           sleep 30
 
+      - name: Wait for backend to be healthy
+        run: |
+          echo "Waiting for backend to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000 2>/dev/null; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Attempt $i: Backend not ready yet, waiting..."
+            sleep 2
+          done
+
+      - name: Wait for frontend to be healthy
+        run: |
+          echo "Waiting for frontend to start..."
+          for i in {1..30}; do
+            if curl -f http://localhost:5173 2>/dev/null; then
+              echo "Frontend is ready!"
+              break
+            fi
+            echo "Attempt $i: Frontend not ready yet, waiting..."
+            sleep 2
+          done
+
       - name: Verify services are running
         run: |
           docker compose -f docker-compose.yaml ps
-          curl -f http://localhost:3000 || echo "Backend not ready"
-          curl -f http://localhost:5173 || echo "Frontend not ready"
+          echo "Final health check..."
+          curl -f http://localhost:3000 && echo "✓ Backend is healthy"
+          curl -f http://localhost:5173 && echo "✓ Frontend is healthy"
 
       - name: Run ZAP Baseline Scan on Frontend
         uses: zaproxy/action-baseline@v0.12.0
