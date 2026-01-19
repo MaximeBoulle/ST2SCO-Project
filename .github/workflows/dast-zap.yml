@@ -59,10 +59,10 @@ jobs:
         uses: zaproxy/action-baseline@v0.12.0
         with:
           target: 'http://localhost:5173'
-          rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
           fail_action: false
           allow_issue_writing: false
+          artifact_name: 'zap-scan-frontend'
 
       - name: Run ZAP API Scan on Backend
         uses: zaproxy/action-api-scan@v0.8.0
@@ -72,6 +72,7 @@ jobs:
           cmd_options: '-a'
           fail_action: false
           allow_issue_writing: false
+          artifact_name: 'zap-scan-backend'
 
       - name: Generate ZAP SARIF report
         if: always()
