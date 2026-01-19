@@ -5,14 +5,31 @@ import { ArrowRight } from 'lucide-react';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
-  const { login } = useAuth();
+  const [password, setPassword] = useState('');
+  const [isRegister, setIsRegister] = useState(false);
+  const [error, setError] = useState('');
+  const { login, register } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (username.trim()) {
-      login(username);
+    setError('');
+
+    if (!username.trim() || !password.trim()) {
+      setError('Username and password are required');
+      return;
+    }
+
+    try {
+      if (isRegister) {
+        await register(username, password);
+        await login(username, password);
+      } else {
+        await login(username, password);
+      }
       navigate('/');
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -26,26 +43,75 @@ const LoginPage = () => {
     }}>
       <div className="neo-box" style={{ padding: '2rem', maxWidth: '400px', width: '90%' }}>
         <h1 style={{ marginTop: 0, fontSize: '2.5rem', borderBottom: '4px solid black', paddingBottom: '1rem' }}>
-          Join the Chat
+          {isRegister ? 'Join the Chat' : 'Welcome Back'}
         </h1>
         <p style={{ fontSize: '1.1rem', lineHeight: '1.5' }}>
-          Enter your username to start messaging. No password required for this demo.
+          {isRegister 
+            ? 'Create an account to start messaging.' 
+            : 'Enter your credentials to continue.'}
         </p>
 
+        {error && (
+          <div style={{ 
+            backgroundColor: '#ffaaaa', 
+            padding: '0.75rem', 
+            border: '2px solid black', 
+            marginBottom: '1rem',
+            fontWeight: 'bold'
+          }}>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <label style={{ fontWeight: 'bold' }}>USERNAME</label>
-          <input
-            className="neo-input"
-            type="text"
-            placeholder="e.g. pixel_wizard"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoFocus
-          />
+          <div>
+            <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>USERNAME</label>
+            <input
+              className="neo-input"
+              type="text"
+              placeholder="e.g. pixel_wizard"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>PASSWORD</label>
+            <input
+              className="neo-input"
+              type="password"
+              placeholder="********"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
           <button type="submit" className="neo-btn">
-            START TALKING <ArrowRight size={20} />
+            {isRegister ? 'REGISTER & LOGIN' : 'LOGIN'} <ArrowRight size={20} />
           </button>
         </form>
+
+        <div style={{ marginTop: '1.5rem', textAlign: 'center', borderTop: '2px solid #eee', paddingTop: '1rem' }}>
+          <button 
+            type="button"
+            onClick={() => {
+              setIsRegister(!isRegister);
+              setError('');
+            }}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              textDecoration: 'underline', 
+              cursor: 'pointer', 
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              color: '#333'
+            }}
+          >
+            {isRegister ? 'Already have an account? Login' : 'Need an account? Register'}
+          </button>
+        </div>
       </div>
     </div>
   );
