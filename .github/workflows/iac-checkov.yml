@@ -37,7 +37,7 @@ jobs:
             --directory . \
             --framework dockerfile docker-compose \
             --output sarif \
-            --output-file-path checkov-results.sarif \
+            --output-file-path . \
             --soft-fail
         continue-on-error: true
 
@@ -56,7 +56,7 @@ jobs:
             --framework dockerfile docker-compose \
             --output cli \
             --output json \
-            --output-file-path checkov-report.json \
+            --output-file-path . \
             --soft-fail || true
 
       - name: Upload scan results
@@ -66,5 +66,5 @@ jobs:
           name: checkov-results
           path: |
             ./results/results_sarif.sarif
-            checkov-report.json
+            ./results/results_json.json
           retention-days: 30

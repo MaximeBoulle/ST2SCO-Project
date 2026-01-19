@@ -29,13 +29,13 @@ jobs:
 
       - name: Setup Docker Compose
         run: |
-          docker compose up -d
+          docker compose -f docker-compose.yaml up -d
           echo "Waiting for services to be ready..."
           sleep 30
 
       - name: Verify services are running
         run: |
-          docker compose ps
+          docker compose -f docker-compose.yaml ps
           curl -f http://localhost:3000 || echo "Backend not ready"
           curl -f http://localhost:5173 || echo "Frontend not ready"
 
@@ -80,4 +80,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yaml down -v
