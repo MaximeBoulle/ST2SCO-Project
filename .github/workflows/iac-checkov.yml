@@ -1,0 +1,65 @@
+name: IaC Scanning - Checkov
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+  schedule:
+    - cron: '0 0 * * 4'  # Weekly scan on Thursdays
+
+jobs:
+  checkov:
+    name: Checkov IaC Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Checkov
+        run: |
+          pip install checkov
+
+      - name: Run Checkov scan
+        run: |
+          checkov \
+            --directory . \
+            --framework dockerfile docker-compose \
+            --output sarif \
+            --output-file-path checkov-results.sarif \
+            --soft-fail
+        continue-on-error: true
+
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: ./results/results_sarif.sarif
+          category: checkov
+
+      - name: Generate detailed report
+        if: always()
+        run: |
+          checkov \
+            --directory . \
+            --framework dockerfile docker-compose \
+            --output cli \
+            --output json \
+            --output-file-path checkov-report.json \
+            --soft-fail || true
+
+      - name: Upload scan results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checkov-results
+          path: |
+            ./results/results_sarif.sarif
+            checkov-report.json
+          retention-days: 30

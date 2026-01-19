@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build outputs
+dist/
+build/
+coverage/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+
+# Security scan results
+semgrep-results.sarif
+snyk-backend.sarif
+snyk-frontend.sarif
+gitleaks-report.sarif
+zap-report.html
+zap-report.json
+checkov-results.sarif
+checkov-report.json
+results/
+
+# Test coverage
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
