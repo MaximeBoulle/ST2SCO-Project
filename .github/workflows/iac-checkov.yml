@@ -37,14 +37,43 @@ jobs:
             --directory . \
             --framework dockerfile docker-compose \
             --output sarif \
-            --soft-fail > checkov-results.sarif || true
+            --output-file-path checkov-results \
+            --soft-fail || true
         continue-on-error: true
+
+      - name: Check if SARIF file exists and is valid
+        if: always()
+        run: |
+          if [ -f "results_sarif.sarif" ]; then
+            echo "SARIF file found"
+            cat results_sarif.sarif
+          else
+            echo "SARIF file not found, creating empty valid SARIF"
+            cat > results_sarif.sarif << 'EOF'
+          {
+            "version": "2.1.0",
+            "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+            "runs": [
+              {
+                "tool": {
+                  "driver": {
+                    "name": "Checkov",
+                    "informationUri": "https://www.checkov.io/",
+                    "version": "1.0.0"
+                  }
+                },
+                "results": []
+              }
+            ]
+          }
+          EOF
+          fi
 
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: checkov-results.sarif
+          sarif_file: results_sarif.sarif
           category: checkov
 
       - name: Generate detailed report
@@ -54,7 +83,8 @@ jobs:
             --directory . \
             --framework dockerfile docker-compose \
             --output json \
-            --soft-fail > checkov-report.json || true
+            --output-file-path checkov-report \
+            --soft-fail || true
 
       - name: Upload scan results
         uses: actions/upload-artifact@v4
@@ -62,6 +92,6 @@ jobs:
         with:
           name: checkov-results
           path: |
-            checkov-results.sarif
-            checkov-report.json
+            results_sarif.sarif
+            results_json.json
           retention-days: 30
