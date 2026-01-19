@@ -159,8 +159,6 @@ jobs:
       - name: Start services
         run: |
           docker compose up -d
-          echo "Waiting for services to be ready..."
-          sleep 30
 
       - name: Verify services health
         run: |
@@ -171,8 +169,6 @@ jobs:
       - name: Run integration tests
         run: |
           echo "Running integration tests..."
-          # Add your integration test commands here
-
       - name: Cleanup
         if: always()
         run: docker compose down -v

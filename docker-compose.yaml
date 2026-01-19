@@ -36,11 +36,9 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules
-      - /app/dist
     depends_on:
       db:
         condition: service_healthy
-    command: npm run start:dev
 
   frontend:
     build:
@@ -57,7 +55,6 @@ services:
       - /app/node_modules
     depends_on:
       - backend
-    command: npm run dev
 
 volumes:
   postgres_data:

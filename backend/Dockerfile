@@ -1,39 +1,20 @@
-FROM node:20-alpine AS builder
+# Use the official Node.js image as the base image
+FROM node:20
 
+# Set the working directory inside the container
 WORKDIR /app
 
+# Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
-RUN npm ci
+# Install the application dependencies
+RUN npm install
 
+# Copy the rest of the application files
 COPY . .
 
-RUN npm run build
-
-FROM node:20-alpine AS production
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm ci --only=production
-
-COPY --from=builder /app/dist ./dist
-
+# Expose the application port
 EXPOSE 3000
 
-CMD ["npm", "run", "start:prod"]
-
-FROM node:20-alpine AS development
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm ci
-
-COPY . .
-
-EXPOSE 3000
-
+# Command to run the application in development mode
 CMD ["npm", "run", "start:dev"]
