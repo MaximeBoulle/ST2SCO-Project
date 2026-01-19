@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # Weekly scan on Sundays
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   semgrep:
     name: Semgrep SAST Scan
@@ -29,7 +34,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: semgrep-results.sarif

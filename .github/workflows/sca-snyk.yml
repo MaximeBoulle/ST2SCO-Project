@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '0 0 * * 1'  # Weekly scan on Mondays
 
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
 jobs:
   snyk-backend:
     name: Snyk SCA - Backend
@@ -37,7 +42,7 @@ jobs:
           json: true
 
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: snyk-backend.sarif
@@ -79,7 +84,7 @@ jobs:
           json: true
 
       - name: Upload SARIF file
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: snyk-frontend.sarif
