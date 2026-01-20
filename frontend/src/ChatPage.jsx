@@ -7,8 +7,7 @@ const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [messagePriority, setMessagePriority] = useState('low');
+  const [userFilter, setUserFilter] = useState('');
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messagesError, setMessagesError] = useState('');
   const [adminOpen, setAdminOpen] = useState(false);
@@ -36,9 +35,6 @@ const ChatPage = () => {
       if (searchQuery.trim()) {
         params.set('search', searchQuery.trim());
       }
-      if (priorityFilter !== 'all') {
-        params.set('priority', priorityFilter);
-      }
       const url = `${API_URL}/messages${params.toString() ? `?${params.toString()}` : ''}`;
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) {
@@ -51,7 +47,7 @@ const ChatPage = () => {
     } finally {
       setMessagesLoading(false);
     }
-  }, [API_URL, priorityFilter, searchQuery]);
+  }, [API_URL, searchQuery]);
 
   const fetchUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -97,7 +93,7 @@ const ChatPage = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ content: inputValue, priority: messagePriority }),
+        body: JSON.stringify({ content: inputValue }),
       });
       if (!res.ok) {
         const errorData = await res.json();
@@ -142,6 +138,12 @@ const ChatPage = () => {
     }
   };
 
+  const filteredMessages = userFilter.trim()
+    ? messages.filter((msg) =>
+        msg.user?.username?.toLowerCase().includes(userFilter.trim().toLowerCase()),
+      )
+    : messages;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f9f9f9' }}>
 
@@ -176,17 +178,14 @@ const ChatPage = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <select
+        </div>
+        <div style={{ width: '220px' }}>
+          <input
             className="neo-input"
-            style={{ width: '160px' }}
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-          >
-            <option value="all">All priorities</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
+            placeholder="Filter by user..."
+            value={userFilter}
+            onChange={(e) => setUserFilter(e.target.value)}
+          />
         </div>
 
         {/* USER STATUS */}
@@ -264,10 +263,10 @@ const ChatPage = () => {
           )}
           {messagesLoading ? (
             <div style={{ textAlign: 'center', opacity: 0.6, marginTop: '2rem' }}>Loading messages...</div>
-          ) : messages.length === 0 ? (
+          ) : filteredMessages.length === 0 ? (
             <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '4rem' }}>No messages found.</div>
           ) : (
-            messages.map((msg) => (
+            filteredMessages.map((msg) => (
               <div key={msg.id} className="neo-box" style={{ padding: '1.5rem', display: 'flex', gap: '1rem' }}>
                 <img src={msg.user?.avatar} alt={msg.user?.username} style={{ width: '50px', height: '50px', border: '2px solid black' }} />
                 <div style={{ flex: 1 }}>
@@ -313,16 +312,6 @@ const ChatPage = () => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
           />
-          <select
-            className="neo-input"
-            style={{ width: '150px' }}
-            value={messagePriority}
-            onChange={(e) => setMessagePriority(e.target.value)}
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
           <button type="submit" className="neo-btn" style={{ padding: '0 2rem' }}>
             <Send size={24} />
           </button>
