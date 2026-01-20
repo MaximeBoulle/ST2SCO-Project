@@ -26,9 +26,7 @@ const ChatPage = () => {
     rawApiUrl && (!isLocalApi || window.location.hostname === 'localhost')
       ? rawApiUrl
       : (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api');
-  const WS_PATH =
-    import.meta.env.VITE_WS_PATH ||
-    (API_URL.endsWith('/api') || API_URL.startsWith('/api') ? '/api/socket.io' : '/socket.io');
+  const WS_PATH = import.meta.env.VITE_WS_PATH || '/api/socket.io';
 
   const scrollToBottom = (behavior = 'auto') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
