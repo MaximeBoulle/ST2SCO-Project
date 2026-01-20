@@ -22,6 +22,8 @@ spec:
           env:
             - name: VITE_API_URL
               value: "/api"
+            - name: VITE_WS_PATH
+              value: "/api/socket.io"
 ---
 apiVersion: v1
 kind: Service

@@ -6,7 +6,12 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const rawApiUrl = import.meta.env.VITE_API_URL;
+  const isLocalApi = rawApiUrl?.includes('localhost');
+  const API_URL =
+    rawApiUrl && (!isLocalApi || window.location.hostname === 'localhost')
+      ? rawApiUrl
+      : (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api');
 
   const checkUserLoggedIn = useCallback(async () => {
     try {

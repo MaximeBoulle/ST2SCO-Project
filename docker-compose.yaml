@@ -26,6 +26,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      WS_PATH: ${WS_PATH:-/socket.io}
       DATABASE_HOST: ${DATABASE_HOST:-db}
       DATABASE_PORT: ${DATABASE_PORT:-5432}
       DATABASE_USER: ${DATABASE_USER:-st2sco_user}
@@ -49,6 +51,7 @@ services:
     restart: unless-stopped
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
+      VITE_WS_PATH: ${VITE_WS_PATH:-/api/socket.io}
     ports:
       - "5173:5173"
     volumes:

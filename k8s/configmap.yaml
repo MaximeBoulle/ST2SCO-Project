@@ -10,3 +10,5 @@ data:
   DATABASE_PORT: "5432"
   DATABASE_NAME: st2sco
   NODE_ENV: production
+  FRONTEND_URL: https://chatty.maximeboulle.com
+  WS_PATH: /api/socket.io

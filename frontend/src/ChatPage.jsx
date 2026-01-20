@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { Search, Send, User, LogOut, MessageSquare, Shield, Trash2 } from 'lucide-react';
+import { io } from 'socket.io-client';
 
 const ChatPage = () => {
   const [messages, setMessages] = useState([]);
@@ -17,14 +18,26 @@ const ChatPage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const messagesContainerRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
+  const rawApiUrl = import.meta.env.VITE_API_URL;
+  const isLocalApi = rawApiUrl?.includes('localhost');
+  const API_URL =
+    rawApiUrl && (!isLocalApi || window.location.hostname === 'localhost')
+      ? rawApiUrl
+      : (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api');
+  const WS_PATH =
+    import.meta.env.VITE_WS_PATH ||
+    (API_URL.endsWith('/api') || API_URL.startsWith('/api') ? '/api/socket.io' : '/socket.io');
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (behavior = 'auto') => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (shouldAutoScrollRef.current) {
+      scrollToBottom('auto');
+    }
   }, [messages]);
 
   const fetchMessages = useCallback(async () => {
@@ -79,6 +92,27 @@ const ChatPage = () => {
     }
   }, [adminOpen, user?.role, fetchUsers]);
 
+  useEffect(() => {
+    const socketUrl = API_URL.startsWith('http')
+      ? (API_URL.endsWith('/api') ? API_URL.slice(0, -4) : API_URL)
+      : undefined;
+    const socket = socketUrl
+      ? io(socketUrl, { withCredentials: true, path: WS_PATH })
+      : io({ withCredentials: true, path: WS_PATH });
+    socket.on('message:new', (message) => {
+      setMessages((prev) => {
+        if (prev.some((msg) => msg.id === message.id)) {
+          return prev;
+        }
+        return [...prev, message];
+      });
+    });
+    return () => {
+      socket.off('message:new');
+      socket.disconnect();
+    };
+  }, [API_URL, WS_PATH]);
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
@@ -89,6 +123,7 @@ const ChatPage = () => {
     }
 
     try {
+      shouldAutoScrollRef.current = true;
       const res = await fetch(`${API_URL}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,8 +134,14 @@ const ChatPage = () => {
         const errorData = await res.json();
         throw new Error(errorData.message || 'Failed to send message');
       }
+      const created = await res.json();
+      setMessages((prev) => {
+        if (prev.some((msg) => msg.id === created.id)) {
+          return prev;
+        }
+        return [...prev, created];
+      });
       setInputValue('');
-      await fetchMessages();
     } catch (err) {
       setMessagesError(err.message);
     }
@@ -136,6 +177,13 @@ const ChatPage = () => {
     } catch (err) {
       setUsersError(err.message);
     }
+  };
+
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    shouldAutoScrollRef.current = distanceFromBottom < 80;
   };
 
   const filteredMessages = (userFilter.trim()
@@ -259,7 +307,11 @@ const ChatPage = () => {
       )}
 
       {/* MESSAGES AREA */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleMessagesScroll}
+        style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}
+      >
         <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {messagesError && (
             <div style={{ backgroundColor: '#ffaaaa', padding: '0.75rem', border: '2px solid black', fontWeight: 'bold' }}>

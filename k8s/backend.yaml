@@ -40,6 +40,16 @@ spec:
                 configMapKeyRef:
                   name: st2sco-config
                   key: DATABASE_NAME
+            - name: FRONTEND_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: st2sco-config
+                  key: FRONTEND_URL
+            - name: WS_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: st2sco-config
+                  key: WS_PATH
             - name: DATABASE_USER
               valueFrom:
                 configMapKeyRef:
