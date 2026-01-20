@@ -4,15 +4,15 @@ services:
     container_name: st2sco-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: st2sco
-      POSTGRES_USER: st2sco_user
-      POSTGRES_PASSWORD: st2sco_password
+      POSTGRES_DB: ${POSTGRES_DB:-st2sco}
+      POSTGRES_USER: ${POSTGRES_USER:-st2sco_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-st2sco_password}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U st2sco_user -d st2sco" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-st2sco_user} -d ${POSTGRES_DB:-st2sco}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,16 +24,16 @@ services:
     container_name: st2sco-backend
     restart: unless-stopped
     environment:
-      NODE_ENV: development
-      JWT_SECRET: your-secret-key-change-in-production
-      DATABASE_HOST: db
-      DATABASE_PORT: 5432
-      DATABASE_USER: st2sco_user
-      DATABASE_PASSWORD: st2sco_password
-      DATABASE_NAME: st2sco
-      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-development}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      DATABASE_HOST: ${DATABASE_HOST:-db}
+      DATABASE_PORT: ${DATABASE_PORT:-5432}
+      DATABASE_USER: ${DATABASE_USER:-st2sco_user}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-st2sco_password}
+      DATABASE_NAME: ${DATABASE_NAME:-st2sco}
+      PORT: ${PORT:-3000}
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:${PORT:-3000}"
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -48,7 +48,7 @@ services:
     container_name: st2sco-frontend
     restart: unless-stopped
     environment:
-      VITE_API_URL: http://localhost:3000
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api}
     ports:
       - "5173:5173"
     volumes:

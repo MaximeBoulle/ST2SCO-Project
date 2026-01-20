@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { MessagePriority } from './message.entity';
 import { UserRole } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { Roles } from '../auth/roles.decorator';
@@ -29,7 +28,7 @@ export class MessagesController {
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(
-    @Body() body: { content: string; priority?: MessagePriority },
+    @Body() body: { content: string },
     @Request() req: RequestWithUser,
   ) {
     // req.user comes from JwtStrategy and has { userId, username, role }
@@ -38,16 +37,13 @@ export class MessagesController {
     if (!user || user.banned) {
       throw new ForbiddenException('User is banned');
     }
-    const priority = body.priority ?? MessagePriority.LOW;
-    return this.messagesService.create(body.content, priority, user);
+    return this.messagesService.create(body.content, user);
   }
 
   @Get()
   findAll(
-    @Query('search') search: string,
-    @Query('priority') priority: MessagePriority,
-  ) {
-    return this.messagesService.findAll(search, priority);
+    @Query('search') search: string) {
+    return this.messagesService.findAll(search);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
