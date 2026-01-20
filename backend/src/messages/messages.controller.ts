@@ -41,8 +41,7 @@ export class MessagesController {
   }
 
   @Get()
-  findAll(
-    @Query('search') search: string) {
+  findAll(@Query('search') search: string) {
     return this.messagesService.findAll(search);
   }
 
