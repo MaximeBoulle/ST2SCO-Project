@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: ghcr.io/maximeboulle/st2sco-project/frontend:latest
+          image: ghcr.io/maximeboulle/st2sco-project/frontend:master
           ports:
             - containerPort: 5173
           env:

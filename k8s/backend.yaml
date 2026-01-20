@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ghcr.io/maximeboulle/st2sco-project/backend:latest
+          image: ghcr.io/maximeboulle/st2sco-project/backend:master
           ports:
             - containerPort: 3000
           env:
