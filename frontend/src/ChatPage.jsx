@@ -138,11 +138,16 @@ const ChatPage = () => {
     }
   };
 
-  const filteredMessages = userFilter.trim()
+  const filteredMessages = (userFilter.trim()
     ? messages.filter((msg) =>
         msg.user?.username?.toLowerCase().includes(userFilter.trim().toLowerCase()),
       )
-    : messages;
+    : messages
+  ).slice().sort((a, b) => {
+    const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return aTime - bTime;
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f9f9f9' }}>
@@ -167,7 +172,7 @@ const ChatPage = () => {
         </div>
 
         {/* SEARCH BAR */}
-        <div style={{ flex: 1, maxWidth: '600px', margin: '0 2rem', display: 'flex', gap: '1rem' }}>
+        <div style={{ flex: 1, maxWidth: '680px', margin: '0 0.5rem', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <Search size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
             <input
@@ -178,14 +183,14 @@ const ChatPage = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-        </div>
-        <div style={{ width: '220px' }}>
-          <input
-            className="neo-input"
-            placeholder="Filter by user..."
-            value={userFilter}
-            onChange={(e) => setUserFilter(e.target.value)}
-          />
+          <div style={{ width: '200px' }}>
+            <input
+              className="neo-input"
+              placeholder="Filter by user..."
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* USER STATUS */}
@@ -279,9 +284,8 @@ const ChatPage = () => {
                     </span>
                   </div>
                   <p style={{ margin: 0, fontSize: '1.1rem', lineHeight: '1.5' }}>{msg.content}</p>
-                  <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>PRIORITY: {msg.priority?.toUpperCase()}</span>
-                    {user?.role === 'admin' && (
+                  {user?.role === 'admin' && (
+                    <div style={{ marginTop: '0.75rem' }}>
                       <button
                         className="neo-btn secondary"
                         style={{ padding: '6px 10px', fontSize: '0.8rem' }}
@@ -289,8 +293,8 @@ const ChatPage = () => {
                       >
                         <Trash2 size={16} /> Delete
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))
