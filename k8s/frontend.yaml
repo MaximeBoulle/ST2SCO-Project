@@ -16,6 +16,7 @@ spec:
       containers:
         - name: frontend
           image: ghcr.io/maximeboulle/st2sco-project/frontend:master
+          imagePullPolicy: Always
           ports:
             - containerPort: 5173
           env:
