@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import { Message, MessagePriority } from './message.entity';
 import { User } from '../users/user.entity';
 
@@ -17,7 +17,7 @@ export class MessagesService {
   }
 
   async findAll(search?: string, priority?: MessagePriority) {
-    const where: any = {};
+    const where: FindOptionsWhere<Message> = {};
     if (search) {
       where.content = Like(`%${search}%`);
     }
@@ -29,5 +29,14 @@ export class MessagesService {
       relations: ['user'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async remove(id: string) {
+    const message = await this.messageRepository.findOne({ where: { id } });
+    if (!message) {
+      throw new Error('Message not found');
+    }
+    await this.messageRepository.remove(message);
+    return { deleted: true };
   }
 }

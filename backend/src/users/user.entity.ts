@@ -25,4 +25,7 @@ export class User {
 
   @Column({ nullable: true })
   avatar: string;
+
+  @Column({ default: false })
+  banned: boolean;
 }

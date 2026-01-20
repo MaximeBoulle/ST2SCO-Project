@@ -1,23 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-import { Search, Send, User, LogOut, MessageSquare } from 'lucide-react';
-
-// Mock initial data
-const INITIAL_MESSAGES = [
-  { id: 1, user: 'dev_sarah', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=dev_sarah', content: 'Has anyone tried the new React compiler yet?', timestamp: '10:00 AM' },
-  { id: 2, user: 'design_mike', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=design_mike', content: 'Yes! It is surprisingly fast. The setup was minimal.', timestamp: '10:05 AM' },
-  { id: 3, user: 'algo_alice', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=algo_alice', content: 'I am still sticking to standard hooks for now. Need to see more stability.', timestamp: '10:12 AM' },
-  { id: 4, user: 'sys_bob', avatar: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=sys_bob', content: 'Anyone up for a game of chess later?', timestamp: '10:30 AM' },
-];
+import { Search, Send, User, LogOut, MessageSquare, Shield, Trash2 } from 'lucide-react';
 
 const ChatPage = () => {
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [messagePriority, setMessagePriority] = useState('low');
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState('');
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersError, setUsersError] = useState('');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -27,7 +28,62 @@ const ChatPage = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = (e) => {
+  const fetchMessages = useCallback(async () => {
+    setMessagesLoading(true);
+    setMessagesError('');
+    try {
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) {
+        params.set('search', searchQuery.trim());
+      }
+      if (priorityFilter !== 'all') {
+        params.set('priority', priorityFilter);
+      }
+      const url = `${API_URL}/messages${params.toString() ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) {
+        throw new Error('Failed to load messages');
+      }
+      const data = await res.json();
+      setMessages(data);
+    } catch (err) {
+      setMessagesError(err.message);
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, [API_URL, priorityFilter, searchQuery]);
+
+  const fetchUsers = useCallback(async () => {
+    setUsersLoading(true);
+    setUsersError('');
+    try {
+      const res = await fetch(`${API_URL}/users`, { credentials: 'include' });
+      if (!res.ok) {
+        throw new Error('Failed to load users');
+      }
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      setUsersError(err.message);
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [API_URL]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      fetchMessages();
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [fetchMessages]);
+
+  useEffect(() => {
+    if (adminOpen && user?.role === 'admin') {
+      fetchUsers();
+    }
+  }, [adminOpen, user?.role, fetchUsers]);
+
+  const handleSend = async (e) => {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
@@ -36,23 +92,55 @@ const ChatPage = () => {
       return;
     }
 
-    const newMessage = {
-      id: messages.length + 1,
-      user: user.username,
-      avatar: user.avatar,
-      content: inputValue,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages([...messages, newMessage]);
-    setInputValue('');
+    try {
+      const res = await fetch(`${API_URL}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: inputValue, priority: messagePriority }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to send message');
+      }
+      setInputValue('');
+      await fetchMessages();
+    } catch (err) {
+      setMessagesError(err.message);
+    }
   };
 
-  // Filter messages based on search query (content or username)
-  const filteredMessages = messages.filter(msg =>
-    msg.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    msg.user.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleDeleteMessage = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/messages/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        throw new Error('Failed to delete message');
+      }
+      await fetchMessages();
+    } catch (err) {
+      setMessagesError(err.message);
+    }
+  };
+
+  const handleToggleBan = async (targetUser) => {
+    try {
+      const res = await fetch(`${API_URL}/users/${targetUser.id}/ban`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ banned: !targetUser.banned }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to update user');
+      }
+      await fetchUsers();
+    } catch (err) {
+      setUsersError(err.message);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f9f9f9' }}>
@@ -77,17 +165,28 @@ const ChatPage = () => {
         </div>
 
         {/* SEARCH BAR */}
-        <div style={{ flex: 1, maxWidth: '500px', margin: '0 2rem' }}>
-          <div style={{ position: 'relative' }}>
+        <div style={{ flex: 1, maxWidth: '600px', margin: '0 2rem', display: 'flex', gap: '1rem' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
             <Search size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
             <input
               className="neo-input"
               style={{ paddingLeft: '40px' }}
-              placeholder="Search messages or users..."
+              placeholder="Search messages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <select
+            className="neo-input"
+            style={{ width: '160px' }}
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+          >
+            <option value="all">All priorities</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
         </div>
 
         {/* USER STATUS */}
@@ -95,6 +194,15 @@ const ChatPage = () => {
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <span style={{ fontWeight: 'bold' }}>@{user.username}</span>
+              {user.role === 'admin' && (
+                <button
+                  onClick={() => setAdminOpen((prev) => !prev)}
+                  className="neo-btn secondary"
+                  style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                >
+                  <Shield size={16} /> Admin
+                </button>
+              )}
               <button onClick={logout} className="neo-btn secondary" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
                 <LogOut size={16} /> Logout
               </button>
@@ -107,21 +215,83 @@ const ChatPage = () => {
         </div>
       </header>
 
+      {/* ADMIN PANEL */}
+      {adminOpen && user?.role === 'admin' && (
+        <div style={{ padding: '2rem', paddingBottom: 0 }}>
+          <div className="neo-box" style={{ padding: '1.5rem' }}>
+            <h2 style={{ marginTop: 0, borderBottom: '3px solid black', paddingBottom: '0.5rem' }}>Admin Panel</h2>
+            {usersError && (
+              <div style={{ backgroundColor: '#ffaaaa', padding: '0.75rem', border: '2px solid black', marginBottom: '1rem', fontWeight: 'bold' }}>
+                {usersError}
+              </div>
+            )}
+            {usersLoading ? (
+              <div>Loading users...</div>
+            ) : (
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {users.map((u) => (
+                  <div key={u.id} className="neo-box" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <img src={u.avatar} alt={u.username} style={{ width: '40px', height: '40px', border: '2px solid black' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 'bold' }}>@{u.username}</div>
+                      <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>{u.role.toUpperCase()}</div>
+                    </div>
+                    <div style={{ fontWeight: 'bold', color: u.banned ? '#b00020' : '#0a7f42' }}>
+                      {u.banned ? 'BANNED' : 'ACTIVE'}
+                    </div>
+                    <button
+                      className="neo-btn secondary"
+                      style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                      onClick={() => handleToggleBan(u)}
+                    >
+                      {u.banned ? 'Unban' : 'Ban'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* MESSAGES AREA */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '2rem' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {filteredMessages.length === 0 ? (
+          {messagesError && (
+            <div style={{ backgroundColor: '#ffaaaa', padding: '0.75rem', border: '2px solid black', fontWeight: 'bold' }}>
+              {messagesError}
+            </div>
+          )}
+          {messagesLoading ? (
+            <div style={{ textAlign: 'center', opacity: 0.6, marginTop: '2rem' }}>Loading messages...</div>
+          ) : messages.length === 0 ? (
             <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '4rem' }}>No messages found.</div>
           ) : (
-            filteredMessages.map((msg) => (
+            messages.map((msg) => (
               <div key={msg.id} className="neo-box" style={{ padding: '1.5rem', display: 'flex', gap: '1rem' }}>
-                <img src={msg.avatar} alt={msg.user} style={{ width: '50px', height: '50px', border: '2px solid black' }} />
+                <img src={msg.user?.avatar} alt={msg.user?.username} style={{ width: '50px', height: '50px', border: '2px solid black' }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <span style={{ fontWeight: '900', fontSize: '1.1rem' }}>@{msg.user}</span>
-                    <span style={{ fontSize: '0.85rem', color: '#666' }}>{msg.timestamp}</span>
+                    <span style={{ fontWeight: '900', fontSize: '1.1rem' }}>@{msg.user?.username}</span>
+                    <span style={{ fontSize: '0.85rem', color: '#666' }}>
+                      {msg.createdAt
+                        ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : ''}
+                    </span>
                   </div>
                   <p style={{ margin: 0, fontSize: '1.1rem', lineHeight: '1.5' }}>{msg.content}</p>
+                  <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>PRIORITY: {msg.priority?.toUpperCase()}</span>
+                    {user?.role === 'admin' && (
+                      <button
+                        className="neo-btn secondary"
+                        style={{ padding: '6px 10px', fontSize: '0.8rem' }}
+                        onClick={() => handleDeleteMessage(msg.id)}
+                      >
+                        <Trash2 size={16} /> Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))
@@ -143,6 +313,16 @@ const ChatPage = () => {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
           />
+          <select
+            className="neo-input"
+            style={{ width: '150px' }}
+            value={messagePriority}
+            onChange={(e) => setMessagePriority(e.target.value)}
+          >
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
           <button type="submit" className="neo-btn" style={{ padding: '0 2rem' }}>
             <Send size={24} />
           </button>

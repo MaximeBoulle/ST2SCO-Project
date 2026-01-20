@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -6,13 +6,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = 'http://localhost:3000';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-  useEffect(() => {
-    checkUserLoggedIn();
-  }, []);
-
-  const checkUserLoggedIn = async () => {
+  const checkUserLoggedIn = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/auth/profile`, {
         credentials: 'include'
@@ -21,12 +17,16 @@ export const AuthProvider = ({ children }) => {
         const userData = await res.json();
         setUser(userData);
       }
-    } catch (error) {
+    } catch {
       console.log("Not logged in");
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_URL]);
+
+  useEffect(() => {
+    checkUserLoggedIn();
+  }, [checkUserLoggedIn]);
 
   const login = async (username, password) => {
     const res = await fetch(`${API_URL}/auth/login`, {
