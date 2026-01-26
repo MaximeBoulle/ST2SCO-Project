@@ -77,4 +77,13 @@ export class UsersController {
     const updated = await this.usersService.update(id, { banned: body.banned });
     return this.sanitizeUser(updated);
   }
+
+  // VULNERABLE: SQL Injection 2nd Order
+  // This endpoint retrieves user stats using a raw SQL query
+  // If username contains SQL payload, it will be executed
+  @Get(':id/stats')
+  @Roles(UserRole.ADMIN)
+  async getUserStats(@Param('id') id: string) {
+    return this.usersService.getUserStats(id);
+  }
 }
