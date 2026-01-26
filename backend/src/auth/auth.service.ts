@@ -12,21 +12,34 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateUser(username: string, pass: string): Promise<AuthUser | null> {
+  async validateUser(
+    username: string,
+    pass: string,
+  ): Promise<{ user: AuthUser | null; error?: string }> {
     const user = await this.usersService.findOne(username);
-    if (user?.banned) {
-      return null;
+
+    // VULNERABLE: User enumeration - different error messages reveal user existence
+    if (!user) {
+      return { user: null, error: 'User not found' };
     }
-    if (user && (await bcrypt.compare(pass, user.password))) {
-      return {
+
+    if (user.banned) {
+      return { user: null, error: 'User is banned' };
+    }
+
+    if (!(await bcrypt.compare(pass, user.password))) {
+      return { user: null, error: 'Incorrect password' };
+    }
+
+    return {
+      user: {
         userId: user.id,
         username: user.username,
         role: user.role,
         avatar: user.avatar,
         banned: user.banned,
-      };
-    }
-    return null;
+      },
+    };
   }
 
   login(user: AuthUser) {
@@ -45,6 +58,12 @@ export class AuthService {
     user: Pick<User, 'username' | 'password'> &
       Partial<Pick<User, 'avatar' | 'role'>>,
   ) {
+    // VULNERABLE: User enumeration - reveals if username exists
+    const existingUser = await this.usersService.findOne(user.username);
+    if (existingUser) {
+      throw new Error('Username already taken');
+    }
+
     const hashedPassword = await bcrypt.hash(user.password, 10);
     const avatar =
       user.avatar ||

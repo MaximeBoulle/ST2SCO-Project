@@ -7,6 +7,7 @@ import {
   Get,
   Res,
   UnauthorizedException,
+  ConflictException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -19,7 +20,15 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() body: RegisterDto) {
-    return this.authService.register(body);
+    try {
+      return await this.authService.register(body);
+    } catch (error) {
+      // VULNERABLE: User enumeration - reveals if username exists
+      if (error instanceof Error && error.message === 'Username already taken') {
+        throw new ConflictException('Username already taken');
+      }
+      throw error;
+    }
   }
 
   @Post('login')
@@ -27,14 +36,17 @@ export class AuthController {
     @Body() body: LoginDto,
     @Res({ passthrough: true }) response: express.Response,
   ) {
-    const user = await this.authService.validateUser(
+    const result = await this.authService.validateUser(
       body.username,
       body.password,
     );
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+
+    // VULNERABLE: User enumeration - exposes specific error messages
+    if (!result.user) {
+      throw new UnauthorizedException(result.error);
     }
-    const { access_token } = this.authService.login(user);
+
+    const { access_token } = this.authService.login(result.user);
 
     response.cookie('Authentication', access_token, {
       httpOnly: true,
@@ -42,7 +54,7 @@ export class AuthController {
       maxAge: 3600000, // 1 hour
     });
 
-    return { message: 'Login successful', user };
+    return { message: 'Login successful', user: result.user };
   }
 
   @Post('logout')
