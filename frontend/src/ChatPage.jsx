@@ -333,7 +333,11 @@ const ChatPage = () => {
                         : ''}
                     </span>
                   </div>
-                  <p style={{ margin: 0, fontSize: '1.1rem', lineHeight: '1.5' }}>{msg.content}</p>
+                  {/* VULNERABLE: XSS Stored - renders HTML without sanitization */}
+                  <p
+                    style={{ margin: 0, fontSize: '1.1rem', lineHeight: '1.5' }}
+                    dangerouslySetInnerHTML={{ __html: msg.content }}
+                  />
                   {user?.role === 'admin' && (
                     <div style={{ marginTop: '0.75rem' }}>
                       <button
