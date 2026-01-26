@@ -8,8 +8,9 @@ async function bootstrap() {
 
   app.use(cookieParser());
   app.setGlobalPrefix('api');
+  // VULNERABLE: CSRF - permissive CORS configuration
   app.enableCors({
-    origin: ['http://localhost:5173', 'https://chatty.maximeboulle.com'],
+    origin: true, // Accepts any origin
     credentials: true,
   });
 

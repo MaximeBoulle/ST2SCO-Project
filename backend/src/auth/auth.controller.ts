@@ -48,10 +48,13 @@ export class AuthController {
 
     const { access_token } = this.authService.login(result.user);
 
+    // VULNERABLE: CSRF - SameSite=None allows cross-site cookie sending
     response.cookie('Authentication', access_token, {
       httpOnly: true,
       path: '/',
       maxAge: 3600000, // 1 hour
+      sameSite: 'none',
+      secure: false,
     });
 
     return { message: 'Login successful', user: result.user };
