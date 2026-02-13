@@ -12,6 +12,7 @@ import {
 import { UsersService } from './users.service';
 import { User, UserRole } from './user.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CsrfGuard } from '../auth/csrf.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import * as bcrypt from 'bcrypt';
@@ -30,6 +31,7 @@ export class UsersController {
 
   @Post()
   @Roles(UserRole.ADMIN)
+  @UseGuards(CsrfGuard)
   async create(@Body() body: Partial<User>) {
     if (body.password) {
       body.password = await bcrypt.hash(body.password, 10);
@@ -46,14 +48,13 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @UseGuards(CsrfGuard)
   async update(
     @Param('id') id: string,
     @Body() body: Partial<User>,
     @Request() req: RequestWithUser,
   ) {
     const user = req.user;
-    // user.userId comes from JwtStrategy.
-    // If Admin, ok. If User, id must match userId.
     if (user.role !== UserRole.ADMIN && user.userId !== id) {
       throw new ForbiddenException('You can only update your own profile');
     }
@@ -62,7 +63,6 @@ export class UsersController {
       body.password = await bcrypt.hash(body.password, 10);
     }
 
-    // If User tries to change role?
     if (user.role !== UserRole.ADMIN && body.role && body.role !== user.role) {
       throw new ForbiddenException('You cannot change your role');
     }
@@ -73,6 +73,7 @@ export class UsersController {
 
   @Patch(':id/ban')
   @Roles(UserRole.ADMIN)
+  @UseGuards(CsrfGuard)
   async banUser(@Param('id') id: string, @Body() body: { banned: boolean }) {
     const updated = await this.usersService.update(id, { banned: body.banned });
     return this.sanitizeUser(updated);

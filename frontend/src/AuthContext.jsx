@@ -2,6 +2,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 
 const AuthContext = createContext(null);
 
+// FIX: CSRF - helper to read the XSRF-TOKEN cookie value
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +29,7 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
       }
     } catch {
-      console.log("Not logged in");
+      // Not logged in
     } finally {
       setLoading(false);
     }
@@ -34,48 +40,62 @@ export const AuthProvider = ({ children }) => {
   }, [checkUserLoggedIn]);
 
   const login = async (username, password) => {
+    // FIX: CSRF - include XSRF-TOKEN header on state-changing requests
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-XSRF-TOKEN': getCsrfToken(),
+      },
       body: JSON.stringify({ username, password }),
       credentials: 'include'
     });
-    
+
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(errorData.message || 'Login failed');
     }
-    
+
     const data = await res.json();
     setUser(data.user);
   };
 
   const register = async (username, password) => {
+    // FIX: CSRF - include XSRF-TOKEN header on state-changing requests
     const res = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-XSRF-TOKEN': getCsrfToken(),
+      },
       body: JSON.stringify({ username, password }),
+      credentials: 'include',
     });
 
     if (!res.ok) {
       const errorData = await res.json();
       throw new Error(errorData.message || 'Registration failed');
     }
-    
+
     return await res.json();
   };
 
   const logout = async () => {
     try {
-      await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+      // FIX: CSRF - include XSRF-TOKEN header on state-changing requests
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        headers: { 'X-XSRF-TOKEN': getCsrfToken() },
+        credentials: 'include',
+      });
     } catch (e) {
-      console.error(e);
+      // Logout error
     }
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, getCsrfToken }}>
       {!loading && children}
     </AuthContext.Provider>
   );

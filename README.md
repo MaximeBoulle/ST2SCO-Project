@@ -153,17 +153,14 @@ Interactive Swagger UI documentation is available at **http://localhost:3000/api
 
 ## Demo Credentials
 
-Accounts are created through the registration page at http://localhost:5173. There are no pre-seeded accounts.
+Two demo accounts are automatically created on first startup:
 
-To promote a user to admin after registration:
+| Role  | Username | Password   |
+|-------|----------|------------|
+| Admin | `admin`  | `Admin123!` |
+| User  | `user`   | `User123!`  |
 
-```bash
-# Connect to the database container
-docker exec -it st2sco-db psql -U st2sco_user -d st2sco
-
-# Promote a user to admin
-UPDATE "user" SET role = 'admin' WHERE username = 'your_username';
-```
+These accounts are seeded by `backend/src/seed/seed.service.ts` via the `OnApplicationBootstrap` hook. If the accounts already exist, the seed is skipped.
 
 ---
 
@@ -240,10 +237,14 @@ ST2SCO-Project/
 │   │   │   ├── auth.service.ts
 │   │   │   ├── auth.module.ts
 │   │   │   ├── auth.types.ts
+│   │   │   ├── csrf.guard.ts
 │   │   │   ├── jwt.strategy.ts
 │   │   │   ├── jwt-auth.guard.ts
 │   │   │   ├── roles.decorator.ts
 │   │   │   └── roles.guard.ts
+│   │   ├── seed/               # Database seeding (demo accounts)
+│   │   │   ├── seed.module.ts
+│   │   │   └── seed.service.ts
 │   │   ├── users/              # User management (CRUD, roles, ban)
 │   │   │   ├── users.controller.ts
 │   │   │   ├── users.service.ts

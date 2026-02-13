@@ -52,3 +52,10 @@ results/
 # Temporary files
 tmp/
 temp/
+
+# Report files (kept locally, not tracked)
+REPORT.md
+report/
+authentication_session_model.txt
+security_tooling_ci.txt
+*.pdf

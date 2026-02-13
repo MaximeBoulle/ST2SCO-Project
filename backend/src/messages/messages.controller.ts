@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CsrfGuard } from '../auth/csrf.guard';
 import { UserRole } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { Roles } from '../auth/roles.decorator';
@@ -25,7 +26,7 @@ export class MessagesController {
     private usersService: UsersService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CsrfGuard)
   @Post()
   async create(
     @Body() body: { content: string },
@@ -45,7 +46,7 @@ export class MessagesController {
     return this.messagesService.findAll(search);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, CsrfGuard)
   @Roles(UserRole.ADMIN)
   @Delete(':id')
   remove(@Param('id') id: string) {

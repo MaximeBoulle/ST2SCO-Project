@@ -15,7 +15,7 @@ const ChatPage = () => {
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState('');
-  const { user, logout } = useAuth();
+  const { user, logout, getCsrfToken } = useAuth();
   const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
@@ -124,7 +124,10 @@ const ChatPage = () => {
       shouldAutoScrollRef.current = true;
       const res = await fetch(`${API_URL}/messages`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': getCsrfToken(),
+        },
         credentials: 'include',
         body: JSON.stringify({ content: inputValue }),
       });
@@ -149,6 +152,7 @@ const ChatPage = () => {
     try {
       const res = await fetch(`${API_URL}/messages/${id}`, {
         method: 'DELETE',
+        headers: { 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
       });
       if (!res.ok) {
@@ -164,7 +168,10 @@ const ChatPage = () => {
     try {
       const res = await fetch(`${API_URL}/users/${targetUser.id}/ban`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-XSRF-TOKEN': getCsrfToken(),
+        },
         credentials: 'include',
         body: JSON.stringify({ banned: !targetUser.banned }),
       });
