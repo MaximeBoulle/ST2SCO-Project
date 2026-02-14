@@ -3,10 +3,14 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { randomBytes } from 'crypto';
-import { Request, Response, NextFunction } from 'express';
+import { Application, Request, Response, NextFunction } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Trust proxy for correct protocol detection behind Traefik/Kubernetes
+  const expressApp = app.getHttpAdapter().getInstance() as Application;
+  expressApp.set('trust proxy', 1);
 
   app.use(cookieParser());
   app.setGlobalPrefix('api');
@@ -25,7 +29,7 @@ async function bootstrap() {
       res.cookie('XSRF-TOKEN', token, {
         httpOnly: false, // Must be readable by JavaScript
         path: '/',
-        sameSite: 'strict',
+        sameSite: 'lax', // 'lax' required for proxy compatibility while maintaining CSRF protection
         secure: process.env.NODE_ENV === 'production',
       });
     }

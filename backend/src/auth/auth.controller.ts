@@ -44,12 +44,12 @@ export class AuthController {
     }
     const { access_token } = this.authService.login(user);
 
-    // FIX: CSRF - SameSite=Strict prevents cross-site cookie sending
+    // FIX: CSRF - SameSite=Lax for proxy compatibility
     response.cookie('Authentication', access_token, {
       httpOnly: true,
       path: '/',
       maxAge: 3600000, // 1 hour
-      sameSite: 'strict',
+      sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
     });
 
