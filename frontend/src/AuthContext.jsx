@@ -19,8 +19,19 @@ export const AuthProvider = ({ children }) => {
       ? rawApiUrl
       : (window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api');
 
+  const ensureCsrfToken = useCallback(async () => {
+    if (!getCsrfToken()) {
+      try {
+        await fetch(`${API_URL}/auth/csrf-token`, { credentials: 'include' });
+      } catch {
+        // CSRF token fetch failed
+      }
+    }
+  }, [API_URL]);
+
   const checkUserLoggedIn = useCallback(async () => {
     try {
+      await ensureCsrfToken();
       const res = await fetch(`${API_URL}/auth/profile`, {
         credentials: 'include'
       });
@@ -33,13 +44,14 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, [API_URL, ensureCsrfToken]);
 
   useEffect(() => {
     checkUserLoggedIn();
   }, [checkUserLoggedIn]);
 
   const login = async (username, password) => {
+    await ensureCsrfToken();
     // FIX: CSRF - include XSRF-TOKEN header on state-changing requests
     const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
@@ -61,6 +73,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (username, password) => {
+    await ensureCsrfToken();
     // FIX: CSRF - include XSRF-TOKEN header on state-changing requests
     const res = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',

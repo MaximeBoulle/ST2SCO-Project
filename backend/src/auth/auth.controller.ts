@@ -18,6 +18,11 @@ import * as express from 'express';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Get('csrf-token')
+  getCsrfToken() {
+    return { message: 'CSRF token set' };
+  }
+
   @Post('register')
   @UseGuards(CsrfGuard)
   async register(@Body() body: RegisterDto) {
