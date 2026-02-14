@@ -88,7 +88,7 @@ export const AuthProvider = ({ children }) => {
         headers: { 'X-XSRF-TOKEN': getCsrfToken() },
         credentials: 'include',
       });
-    } catch (e) {
+    } catch {
       // Logout error
     }
     setUser(null);

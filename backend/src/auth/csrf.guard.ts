@@ -17,7 +17,9 @@ export class CsrfGuard implements CanActivate {
       return true;
     }
 
-    const cookieToken = request.cookies?.['XSRF-TOKEN'];
+    const cookieToken: string | undefined = request.cookies?.['XSRF-TOKEN'] as
+      | string
+      | undefined;
     const headerToken = request.headers['x-xsrf-token'] as string;
 
     if (!cookieToken || !headerToken) {

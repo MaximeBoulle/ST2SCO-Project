@@ -32,7 +32,9 @@ export class SeedService implements OnApplicationBootstrap {
     for (const demo of demoUsers) {
       const existing = await this.usersService.findOne(demo.username);
       if (existing) {
-        this.logger.log(`Demo account "${demo.username}" already exists, skipping.`);
+        this.logger.log(
+          `Demo account "${demo.username}" already exists, skipping.`,
+        );
         continue;
       }
 
@@ -43,7 +45,9 @@ export class SeedService implements OnApplicationBootstrap {
         role: demo.role,
         avatar: demo.avatar,
       });
-      this.logger.log(`Demo account "${demo.username}" created (role: ${demo.role}).`);
+      this.logger.log(
+        `Demo account "${demo.username}" created (role: ${demo.role}).`,
+      );
     }
   }
 }
