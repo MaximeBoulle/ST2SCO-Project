@@ -74,18 +74,12 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (username, password) => {
     await ensureCsrfToken();
-
-    // DEBUG: Log cookie availability
-    const csrfToken = getCsrfToken();
-    console.log('[FRONTEND DEBUG] document.cookie:', document.cookie);
-    console.log('[FRONTEND DEBUG] CSRF token from getCsrfToken():', csrfToken || 'EMPTY');
-
     // FIX: CSRF - include XSRF-TOKEN header on state-changing requests
     const res = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-XSRF-TOKEN': csrfToken,
+        'X-XSRF-TOKEN': getCsrfToken(),
       },
       body: JSON.stringify({ username, password }),
       credentials: 'include',
